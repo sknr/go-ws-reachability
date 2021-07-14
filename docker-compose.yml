@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: sknr/go-ws-reachability:latest
+#   Uncomment the next two lines in order to use your own config.json instead of the example one.
+#    volumes:
+#      - ./data:/app/data
+    restart: unless-stopped

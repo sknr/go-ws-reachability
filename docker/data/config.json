@@ -1,0 +1,17 @@
+{
+  "TelegramBotToken": "",
+  "TelegramUserID": "",
+  "ClientRequestTimeout": "5s",
+  "Websites": [
+    {
+      "Name": "Google",
+      "URL": "https://google.de",
+      "Interval": "5m"
+    },
+    {
+      "Name": "Yahoo",
+      "URL": "https://yahoo.de",
+      "Interval": "15m"
+    }
+  ]
+}
