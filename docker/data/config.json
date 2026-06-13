@@ -1,7 +1,7 @@
 {
   "TelegramBotToken": "",
   "TelegramUserID": "",
-  "ClientRequestTimeout": "5s",
+  "ClientRequestTimeout": "10s",
   "Websites": [
     {
       "Name": "Google",

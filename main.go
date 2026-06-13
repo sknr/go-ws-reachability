@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/yanzay/tbot/v2"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/yanzay/tbot/v2"
 )
 
 const (
@@ -44,11 +44,10 @@ func init() {
 }
 
 func main() {
-	var termSig chan os.Signal
-	termSig = make(chan os.Signal, 1)
+	termSig := make(chan os.Signal, 1)
 	signal.Notify(termSig, os.Interrupt)
 
-	content, err := ioutil.ReadFile("./data/config.json")
+	content, err := os.ReadFile("./data/config.json")
 	if err != nil {
 		log.Fatal().Msg(fmt.Sprintf("Error when opening file: %s", err))
 	}
@@ -60,10 +59,10 @@ func main() {
 	}
 
 	if config.TelegramBotToken == "" {
-		log.Fatal().Msg(fmt.Sprintf("Missing telegram bot token"))
+		log.Fatal().Msg("Missing telegram bot token")
 	}
 	if config.TelegramUserID == "" {
-		log.Fatal().Msg(fmt.Sprintf("Missing telegram user id"))
+		log.Fatal().Msg("Missing telegram user id")
 	}
 
 	// Create a telegram client
@@ -101,7 +100,7 @@ func checkWebsite(ws WSConfig) {
 		if err != nil {
 			// Send error message
 			errMsg := fmt.Sprintf("Website %q (%s) is down!\nPlease take immediate action.", ws.Name, ws.URL)
-			log.Err(err).Msg(fmt.Sprintf(errMsg))
+			log.Err(err).Msg(errMsg)
 			sendTelegramMessage(errMsg)
 		} else {
 			// Everything ok
@@ -110,7 +109,7 @@ func checkWebsite(ws WSConfig) {
 			} else {
 				// Send error message
 				errMsg := fmt.Sprintf("Website %q (%s) is down!\nStatusCode: %d\nStatus: %s\nPlease take immediate action.", ws.Name, ws.URL, resp.StatusCode, resp.Status)
-				log.Error().Msg(fmt.Sprintf(errMsg))
+				log.Error().Msg(errMsg)
 				sendTelegramMessage(errMsg)
 			}
 		}

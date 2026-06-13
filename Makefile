@@ -4,3 +4,10 @@ build:
 
 run:
 	docker run --rm sknr/go-ws-reachability
+
+vuln:
+	govulncheck ./...
+
+lint:
+	golangci-lint run
+
