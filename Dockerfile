@@ -1,5 +1,7 @@
 # Stage 1: Build the Go binary
-FROM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
 
 # Install ca-certificates to verify SSL connections
 RUN apk update && apk add --no-cache ca-certificates
@@ -14,7 +16,7 @@ RUN go mod download
 COPY . .
 
 # Build statically linked binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ws-reachability main.go
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-s -w" -o ws-reachability main.go
 
 # Stage 2: Scratch image (Zero vulnerabilities, minimal footprint)
 FROM scratch
