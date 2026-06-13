@@ -1,36 +1,62 @@
-## Go website reachability checker
+# 🌐 go-ws-reachability
 
-Performs scheduled HTTP HEAD request in order to check the reachability of the specified websites. Any occurring error
-will be reported via telegram message. Therefore, the app needs a valid
-[Telegram bot token](https://core.telegram.org/bots), and a Telegram user id in order to function properly.
+[![Go Version](https://img.shields.io/github/go-mod/go-version/sknr/go-ws-reachability?color=00ADD8&logo=go)](https://golang.org)
+[![License](https://img.shields.io/github/license/sknr/go-ws-reachability?color=blue)](LICENSE)
+[![Uptime Monitor](https://img.shields.io/badge/Status-Active-brightgreen)](https://github.com/sknr/go-ws-reachability)
 
-### What the app does
+A lightweight, reliable, and containerized website uptime monitor written in Go. It performs scheduled HTTP `HEAD` requests to verify website reachability and sends instant Telegram alerts on status changes.
 
-1. Load data/config.json.
-2. Start go routines for each individual website.
-3. Report via Telegram if an error (!= HTTP Status 200) occurred.
+---
 
-### Usage
+## ✨ Features
 
-1. Copy `docker/data/config.json` to `data/config.json`
-2. Adjust the config to your needs 
-3. Run: `go run main.go`
+- **⚡ Lightweight & Fast:** Written in Go with minimal dependencies.
+- **🛡️ Connection Leak Free:** Explicitly handles HTTP connection cleanups.
+- **🔄 Smart Uptime Transitions:** Alerting happens **only** when a website goes down (`UP` ➔ `DOWN`) or recovers (`DOWN` ➔ `UP`) to prevent Telegram message spam.
+- **🐳 Docker Ready:** Multi-stage `Dockerfile` creating minimal, containerized runtime environments.
+- **🔌 Environment Variable Support:** Easily inject credentials (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_USER_ID`) via environments for Kubernetes, Docker Compose, or Cloud environments.
+- **🛑 Graceful Shutdown:** Automatically catches termination signals (`SIGINT`, `SIGTERM`), cancels in-flight HTTP requests, and shuts down cleanly.
 
-### Usage with Docker
+---
 
-#### With docker compose
+## 📐 How it Works
 
-- Start the container: `docker compose up -d`
-- Stop the container: `docker compose down`
-
-#### Alternative without docker compose
-
-1. Create the container with `make build`
-2. Start the container with `make run`
-
-### Example config
-
+```mermaid
+flowchart TD
+    Start([Start Application]) --> LoadConfig[Load config.json]
+    LoadConfig --> EnvOverride[Apply Env Variable Overrides]
+    EnvOverride --> Validate[Validate URLs & Intervals]
+    Validate --> InitClient[Initialize Telegram & HTTP Clients]
+    InitClient --> MonitorLoop[Spawn Goroutines per Website]
+    
+    subgraph Monitor Goroutine
+        Wait{Ticker Event} --> SendHead[Send HTTP HEAD Request]
+        SendHead --> CheckStatus{Status OK?}
+        CheckStatus -- Yes --> WasDown1{Was Down?}
+        CheckStatus -- No/Error --> WasDown2{Was Down?}
+        
+        WasDown1 -- Yes --> Recovered[Send Recovery Telegram Alert] --> SetUp[Set State = UP]
+        WasDown1 -- No --> Done[Log OK State]
+        
+        WasDown2 -- No --> Down[Send Down Telegram Alert] --> SetDown[Set State = DOWN]
+        WasDown2 -- Yes --> Done
+    end
+    
+    MonitorLoop --> Wait
 ```
+
+---
+
+## 🚀 Quick Start
+
+### 1. Configure the Application
+Copy the example config to the actual config location:
+```bash
+cp docker/data/config.json data/config.json
+```
+
+Modify `data/config.json` with your parameters:
+```json
 {
   "TelegramBotToken": "YOUR_TELEGRAM_BOT_TOKEN",
   "TelegramUserID": "YOUR_TELEGRAM_USER_ID",
@@ -38,15 +64,77 @@ will be reported via telegram message. Therefore, the app needs a valid
   "Websites": [
     {
       "Name": "Google",
-      "URL": "https://google.de",
+      "URL": "https://google.com",
       "Interval": "5m"
     },
     {
-      "Name": "Yahoo",
-      "URL": "https://yahoo.de",
+      "Name": "Portfolio",
+      "URL": "https://example.com",
       "Interval": "15m"
     }
   ]
 }
 ```
 
+### 2. Run Locally
+```bash
+go run main.go
+```
+
+---
+
+## 🐳 Docker Deployment
+
+### With Docker Compose
+Run the app in the background using Docker Compose:
+```bash
+docker compose up -d --build
+```
+> **Note:** Modern compose parses the Dockerfile, builds the Go binary inside a multi-stage builder container, and spins it up inside a minimal alpine container automatically.
+
+### Manual Run (Without Compose)
+1. **Build the image**:
+   ```bash
+   make build
+   ```
+2. **Run the container**:
+   ```bash
+   make run
+   ```
+
+---
+
+## ⚙️ Configuration Properties
+
+| Property | Description | Env Override Option | Default |
+| :--- | :--- | :--- | :--- |
+| `TelegramBotToken` | Your Telegram Bot API token. | `TELEGRAM_BOT_TOKEN` | *Required* |
+| `TelegramUserID` | Your Telegram chat/user ID to receive alerts. | `TELEGRAM_USER_ID` | *Required* |
+| `ClientRequestTimeout` | The HTTP request timeout duration (e.g. `5s`, `1m`). | - | `15s` |
+| `Websites` | List of website configuration objects. | - | `[]` |
+| `Websites.Name` | Name identifier for the website in notifications. | - | *Required* |
+| `Websites.URL` | Absolute URL to check (e.g. `https://google.com`). | - | *Required* |
+| `Websites.Interval` | Monitoring poll interval duration (e.g., `1m`, `1h`). | - | *Required* |
+
+---
+
+## 🛠️ Development
+
+We use `make` targets to maintain project quality. Ensure your changes compile, pass tests, and satisfy linting rules:
+
+- **Run all checks (format, test, lint, vulnerabilities)**:
+  ```bash
+  make verify
+  ```
+- **Run Unit Tests**:
+  ```bash
+  make test
+  ```
+- **Run Linter**:
+  ```bash
+  make lint
+  ```
+- **Check for vulnerabilities**:
+  ```bash
+  make vuln
+  ```
