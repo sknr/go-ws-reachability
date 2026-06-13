@@ -1,6 +1,9 @@
 # Stage 1: Build the Go binary
 FROM golang:1.26-alpine AS builder
 
+# Install ca-certificates to verify SSL connections
+RUN apk update && apk add --no-cache ca-certificates
+
 WORKDIR /src
 
 # Copy go.mod and go.sum for caching dependency downloads
@@ -13,10 +16,11 @@ COPY . .
 # Build statically linked binary
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ws-reachability main.go
 
-# Stage 2: Minimal runtime image
-FROM alpine:latest
+# Stage 2: Scratch image (Zero vulnerabilities, minimal footprint)
+FROM scratch
 
-RUN apk update && apk add --no-cache ca-certificates && rm -rf /var/cache/apk/*
+# Copy root CA certificates from builder stage
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /app
 
